@@ -1,9 +1,9 @@
-package com.example.qras
+package com.kptm.SmartQRA
 
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.example.qras.databinding.ActivityAdminDashBinding
+import com.kptm.SmartQRA.databinding.ActivityAdminDashBinding
 
 class AdminDash : AppCompatActivity() {
 
@@ -15,7 +15,7 @@ class AdminDash : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.btnCreateEvent.setOnClickListener {
-            val intent = Intent(this, CreateEventActivity::class.java)
+            val intent = Intent(this, CreateEvent::class.java)
             startActivity(intent)
         }
 

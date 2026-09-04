@@ -1,9 +1,9 @@
-package com.example.qras
+package com.kptm.SmartQRA
 
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.example.qras.databinding.LoginandsignBinding
+import com.kptm.SmartQRA.databinding.LoginandsignBinding // Fixed import path
 
 class LoginAndSign : AppCompatActivity() {
 
@@ -14,15 +14,17 @@ class LoginAndSign : AppCompatActivity() {
         binding = LoginandsignBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Continue as User
+        // Continue as User -> go to Login, tagged as "student"
         binding.btnUser.setOnClickListener {
-            val intent = Intent(this, UserDash::class.java)
+            val intent = Intent(this, Login::class.java)
+            intent.putExtra("role", "student")
             startActivity(intent)
         }
 
-        // Continue as Admin
+        // Continue as Admin -> go to Login, tagged as "admin"
         binding.btnAdmin.setOnClickListener {
-            val intent = Intent(this, AdminDash::class.java)
+            val intent = Intent(this, Login::class.java)
+            intent.putExtra("role", "admin")
             startActivity(intent)
         }
     }

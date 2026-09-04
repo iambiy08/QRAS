@@ -1,11 +1,11 @@
-package com.example.qras
+package com.kptm.SmartQRA
 
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.os.Bundle
 import android.os.CountDownTimer
 import androidx.appcompat.app.AppCompatActivity
-import com.example.qras.databinding.ActivityQrdisplayBinding
+import com.kptm.SmartQRA.databinding.ActivityQrdisplayBinding
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 import java.util.UUID

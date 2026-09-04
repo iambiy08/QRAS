@@ -2,15 +2,16 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.google.services)
 }
 
 // 2. Android Configuration Block
 android {
-    namespace = "com.example.qras"
+    namespace = "com.kptm.SmartQRA"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.qras"
+        applicationId = "com.kptm.SmartQRA"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
@@ -55,6 +56,7 @@ dependencies {
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
     implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
 
     // ZXing Barcode Scanner Library
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")

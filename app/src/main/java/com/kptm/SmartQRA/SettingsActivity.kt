@@ -1,10 +1,10 @@
-package com.example.qras
+package com.kptm.SmartQRA
 
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
-import com.example.qras.databinding.ActivitySettingsBinding
+import com.kptm.SmartQRA.databinding.ActivitySettingsBinding
 
 class SettingsActivity : AppCompatActivity() {
 

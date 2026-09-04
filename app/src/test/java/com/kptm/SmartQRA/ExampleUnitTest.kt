@@ -1,4 +1,4 @@
-package com.example.qras
+package com.kptm.SmartQRA
 
 import org.junit.Test
 

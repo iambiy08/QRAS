@@ -1,4 +1,4 @@
-package com.example.qras
+package com.kptm.SmartQRA
 
 import android.os.Bundle
 import android.widget.Toast
