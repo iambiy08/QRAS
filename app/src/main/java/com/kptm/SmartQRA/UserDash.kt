@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.kptm.SmartQRA.databinding.ActivityUserDashBinding
+import com.kptm.SmartQRA.R
 
 class UserDash : AppCompatActivity() {
 
@@ -25,6 +26,7 @@ class UserDash : AppCompatActivity() {
             insets
         }
 
+        // Dashboard Card/Button Click Listeners
         binding.btnScanQr.setOnClickListener {
             val intent = Intent(this, ScanQrActivity::class.java)
             startActivity(intent)
@@ -33,6 +35,23 @@ class UserDash : AppCompatActivity() {
         binding.btnSettings.setOnClickListener {
             val intent = Intent(this, SettingsActivity::class.java)
             startActivity(intent)
+        }
+
+        // Bottom Navigation (Events & Scan QR only)
+        binding.bottomNavigation.selectedItemId = R.id.nav_events
+
+        binding.bottomNavigation.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_events -> true // Already on User Dashboard / Events screen
+
+                R.id.nav_scan_qr -> {
+                    val intent = Intent(this, ScanQrActivity::class.java)
+                    startActivity(intent)
+                    true
+                }
+
+                else -> false
+            }
         }
     }
 }

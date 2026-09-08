@@ -4,7 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.kptm.SmartQRA.databinding.ActivitySignupBinding // Fixed import path
+import com.kptm.SmartQRA.databinding.ActivitySignupBinding
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -27,9 +27,9 @@ class Signup : AppCompatActivity() {
         binding.tvSignupTitle.text = if (role == "admin") "Create Admin Account" else "Create Student Account"
 
         binding.btnSignup.setOnClickListener {
-            val name = binding.etName.text.toString().trim()
-            val email = binding.etEmail.text.toString().trim()
-            val password = binding.etPassword.text.toString().trim()
+            val name = binding.etName.text?.toString()?.trim() ?: ""
+            val email = binding.etEmail.text?.toString()?.trim() ?: ""
+            val password = binding.etPassword.text?.toString()?.trim() ?: ""
 
             if (name.isEmpty() || email.isEmpty() || password.isEmpty()) {
                 Toast.makeText(this, "Fill in all fields", Toast.LENGTH_SHORT).show()
@@ -72,6 +72,8 @@ class Signup : AppCompatActivity() {
         } else {
             Intent(this, UserDash::class.java)
         }
+        // Clears activity stack so user cannot press 'Back' to return to Signup screen
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(intent)
         finish()
     }

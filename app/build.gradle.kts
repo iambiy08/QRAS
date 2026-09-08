@@ -57,6 +57,8 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.android.material:material:1.11.0")
+    implementation("com.google.firebase:firebase-database-ktx:20.3.1")
 
     // ZXing Barcode Scanner Library
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
