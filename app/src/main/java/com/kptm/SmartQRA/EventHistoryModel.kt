@@ -2,6 +2,7 @@ package com.kptm.SmartQRA
 
 data class EventHistoryModel(
     val eventId: String = "",
+    val shortId: String = "",
     val eventName: String = "",
     val date: String = "",
     val attendedCount: Int = 0,

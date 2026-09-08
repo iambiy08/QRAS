@@ -67,6 +67,7 @@ class CreateEvent : AppCompatActivity() {
 
         val eventMap = hashMapOf(
             "eventId" to eventId,
+            "shortId" to generateShortId(),
             "eventName" to eventName,
             "location" to location,
             "managedBy" to manager,
@@ -95,5 +96,10 @@ class CreateEvent : AppCompatActivity() {
             .addOnFailureListener { exception ->
                 Toast.makeText(this, "Failed to create event: ${exception.message}", Toast.LENGTH_SHORT).show()
             }
+    }
+
+    private fun generateShortId(length: Int = 6): String {
+        val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        return (1..length).map { chars.random() }.joinToString("")
     }
 }

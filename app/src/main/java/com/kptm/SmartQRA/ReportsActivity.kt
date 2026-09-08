@@ -4,17 +4,16 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
+import android.net.Uri
 import android.os.Bundle
-import android.os.Environment
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.kptm.SmartQRA.databinding.ActivityReportsBinding
-import java.io.File
-import java.io.FileOutputStream
-import java.io.FileWriter
+import java.io.OutputStreamWriter
 
 class ReportsActivity : AppCompatActivity() {
 
@@ -26,6 +25,16 @@ class ReportsActivity : AppCompatActivity() {
 
     private var eventId: String? = null
 
+    // Launches the system "Save As" picker for a PDF file
+    private val createPdfLauncher = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("application/pdf")
+    ) { uri -> if (uri != null) writePdfToUri(uri) }
+
+    // Launches the system "Save As" picker for a CSV file
+    private val createCsvLauncher = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("text/csv")
+    ) { uri -> if (uri != null) writeCsvToUri(uri) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityReportsBinding.inflate(layoutInflater)
@@ -35,8 +44,21 @@ class ReportsActivity : AppCompatActivity() {
 
         eventId = intent.getStringExtra("EVENT_ID")
 
-        binding.btnExportPdf.setOnClickListener { generatePdfReport() }
-        binding.btnExportExcel.setOnClickListener { generateExcelReport() }
+        binding.btnExportPdf.setOnClickListener {
+            if (attendanceList.isEmpty()) {
+                Toast.makeText(this, "Open a specific event's report to export attendee PDF", Toast.LENGTH_LONG).show()
+            } else {
+                createPdfLauncher.launch("Attendance_Report_${System.currentTimeMillis()}.pdf")
+            }
+        }
+
+        binding.btnExportExcel.setOnClickListener {
+            if (attendanceList.isEmpty()) {
+                Toast.makeText(this, "Open a specific event's report to export attendee CSV", Toast.LENGTH_LONG).show()
+            } else {
+                createCsvLauncher.launch("Attendance_Report_${System.currentTimeMillis()}.csv")
+            }
+        }
 
         if (eventId != null) {
             loadSingleEventReport(eventId!!)
@@ -45,6 +67,7 @@ class ReportsActivity : AppCompatActivity() {
         }
     }
 
+    // ---------- MODE 1: Single event detail ----------
     private fun loadSingleEventReport(id: String) {
         db.collection("events").document(id).get()
             .addOnSuccessListener { eventDoc ->
@@ -85,9 +108,11 @@ class ReportsActivity : AppCompatActivity() {
             }
     }
 
+    // ---------- MODE 2: Overview of all ended events (with search) ----------
     private fun loadAllEndedEventsOverview() {
         binding.tvReportsHeader.text = "Attendance Reports"
         binding.tvSubHeader.text = "Tap an event to view its full report"
+        binding.tilSearch.visibility = android.view.View.VISIBLE
 
         db.collection("events")
             .whereEqualTo("status", "Ended")
@@ -97,6 +122,7 @@ class ReportsActivity : AppCompatActivity() {
                 eventOverviewList = snapshot.documents.map { doc ->
                     EventHistoryModel(
                         eventId = doc.id,
+                        shortId = doc.getString("shortId") ?: "",
                         eventName = doc.getString("eventName") ?: "Unnamed Event",
                         date = doc.getString("date") ?: "N/A",
                         attendedCount = doc.getLong("attendedCount")?.toInt() ?: 0,
@@ -106,29 +132,50 @@ class ReportsActivity : AppCompatActivity() {
                     )
                 }
 
-                binding.tvRecordCount.text = "Summary Records (Total: ${eventOverviewList.size})"
-                binding.rvReportsList.adapter = DashboardHistoryAdapter(eventOverviewList) { clicked ->
-                    val intent = android.content.Intent(this, ReportsActivity::class.java).apply {
-                        putExtra("EVENT_ID", clicked.eventId)
-                    }
-                    startActivity(intent)
-                }
+                renderEventOverviewList(eventOverviewList)
 
-                binding.tvEmptyState.text = "No ended events yet"
-                binding.tvEmptyState.visibility =
-                    if (eventOverviewList.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
+                binding.etSearch.addTextChangedListener(object : android.text.TextWatcher {
+                    override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                    override fun afterTextChanged(s: android.text.Editable?) {
+                        filterEventOverview(s?.toString() ?: "")
+                    }
+                })
             }
             .addOnFailureListener {
                 Toast.makeText(this, "Failed to load reports: ${it.message}", Toast.LENGTH_SHORT).show()
             }
     }
 
-    private fun generatePdfReport() {
-        if (attendanceList.isEmpty()) {
-            Toast.makeText(this, "Open a specific event's report to export attendee PDF", Toast.LENGTH_LONG).show()
-            return
+    private fun filterEventOverview(query: String) {
+        val trimmed = query.trim()
+        val filtered = if (trimmed.isEmpty()) {
+            eventOverviewList
+        } else {
+            eventOverviewList.filter { event ->
+                event.eventName.contains(trimmed, ignoreCase = true) ||
+                        event.shortId.contains(trimmed, ignoreCase = true)
+            }
+        }
+        renderEventOverviewList(filtered)
+    }
+
+    private fun renderEventOverviewList(list: List<EventHistoryModel>) {
+        binding.tvRecordCount.text = "Summary Records (Total: ${list.size})"
+        binding.rvReportsList.adapter = DashboardHistoryAdapter(list) { clicked ->
+            val intent = android.content.Intent(this, ReportsActivity::class.java).apply {
+                putExtra("EVENT_ID", clicked.eventId)
+            }
+            startActivity(intent)
         }
 
+        binding.tvEmptyState.text = "No matching events"
+        binding.tvEmptyState.visibility =
+            if (list.isEmpty()) android.view.View.VISIBLE else android.view.View.GONE
+    }
+
+    // ---------- Export: writes to the Uri the user picked via the system file picker ----------
+    private fun writePdfToUri(uri: Uri) {
         val pdfDocument = PdfDocument()
         val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
         val page = pdfDocument.startPage(pageInfo)
@@ -157,10 +204,11 @@ class ReportsActivity : AppCompatActivity() {
 
         pdfDocument.finishPage(page)
 
-        val file = File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "Attendance_Report.pdf")
         try {
-            pdfDocument.writeTo(FileOutputStream(file))
-            Toast.makeText(this, "PDF saved to: ${file.absolutePath}", Toast.LENGTH_LONG).show()
+            contentResolver.openOutputStream(uri)?.use { out ->
+                pdfDocument.writeTo(out)
+            }
+            Toast.makeText(this, "PDF saved successfully!", Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(this, "Failed to save PDF: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -169,28 +217,20 @@ class ReportsActivity : AppCompatActivity() {
         }
     }
 
-    private fun generateExcelReport() {
-        if (attendanceList.isEmpty()) {
-            Toast.makeText(this, "Open a specific event's report to export attendee CSV", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        val file = File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "Attendance_Report.csv")
-
+    private fun writeCsvToUri(uri: Uri) {
         try {
-            val writer = FileWriter(file)
-            writer.append("Event ID,Event Name,Student Name,Time,Status\n")
-
-            for (record in attendanceList) {
-                writer.append("${record.eventId},${record.eventName},${record.studentName},${record.time},${record.status}\n")
+            contentResolver.openOutputStream(uri)?.use { out ->
+                OutputStreamWriter(out).use { writer ->
+                    writer.write("Event ID,Event Name,Student Name,Time,Status\n")
+                    for (record in attendanceList) {
+                        writer.write("${record.eventId},${record.eventName},${record.studentName},${record.time},${record.status}\n")
+                    }
+                }
             }
-
-            writer.flush()
-            writer.close()
-            Toast.makeText(this, "Excel file saved to: ${file.absolutePath}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Excel file saved successfully!", Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(this, "Failed to save Excel file", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Failed to save Excel file: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 }

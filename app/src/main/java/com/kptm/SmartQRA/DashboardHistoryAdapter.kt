@@ -12,6 +12,7 @@ class DashboardHistoryAdapter(
 
     class ViewHolder(view: android.view.View) : RecyclerView.ViewHolder(view) {
         val tvName: android.widget.TextView = view.findViewById(R.id.tvHistoryEventName)
+        val tvId: android.widget.TextView = view.findViewById(R.id.tvHistoryId)
         val tvDate: android.widget.TextView = view.findViewById(R.id.tvHistoryDate)
         val tvCount: android.widget.TextView = view.findViewById(R.id.tvAttendanceCount)
         val tvStatus: android.widget.TextView = view.findViewById(R.id.tvHistoryStatus)
@@ -27,6 +28,7 @@ class DashboardHistoryAdapter(
         val item = items[position]
 
         holder.tvName.text = item.eventName
+        holder.tvId.text = "ID: ${item.shortId}"
         holder.tvDate.text = "Date: ${item.date}"
 
         val maxText = if (item.maxPeople > 0) item.maxPeople.toString() else "-"
