@@ -5,7 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8F9FC">
+    android:background="@color/sq_background">
 
     <!-- Scrollable Content Area -->
     <androidx.core.widget.NestedScrollView
@@ -47,7 +47,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Manage events and session QR codes"
-                        android:textColor="#64748B"
+                        android:textColor="@color/sq_text_secondary"
                         android:textSize="13sp" />
                 </LinearLayout>
 
@@ -63,7 +63,7 @@
                     app:icon="@android:drawable/ic_menu_preferences"
                     app:iconGravity="textStart"
                     app:iconSize="20dp"
-                    app:iconTint="#0F172A" />
+                    app:iconTint="@color/sq_text_primary" />
             </RelativeLayout>
 
             <!-- Recent Events Section -->
@@ -82,36 +82,17 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:nestedScrollingEnabled="false"
-                tools:itemCount="2"
+                tools:itemCount="3"
                 tools:listitem="@layout/item_dashboard_event" />
 
-            <!-- Attendance History Section -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:text="Attendance History"
-                android:textColor="#0F172A"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvAttendanceHistory"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:nestedScrollingEnabled="false"
-                tools:itemCount="3"
-                tools:listitem="@layout/item_dashboard_history" />
-
-            <!-- Create Event Action Button (Moved to Bottom) -->
+            <!-- Create Event Action Button (Tepat di bawah Recent Events) -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnCreateEvent"
                 android:layout_width="match_parent"
                 android:layout_height="54dp"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="20dp"
                 android:backgroundTint="#2563EB"
-                android:text="Create Event"
+                android:text="+ Create New Event"
                 android:textAllCaps="false"
                 android:textColor="#FFFFFF"
                 android:textSize="16sp"
@@ -126,7 +107,7 @@
         android:id="@+id/bottomNavigation"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#FFFFFF"
+        android:background="@color/sq_surface"
         app:elevation="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

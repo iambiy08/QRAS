@@ -5,7 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8F9FC"
+    android:background="@color/sq_background"
     android:orientation="vertical"
     android:padding="24dp">
 
@@ -29,7 +29,7 @@
         android:clickable="true"
         android:focusable="true"
         android:foreground="?android:attr/selectableItemBackground"
-        app:cardBackgroundColor="#FFFFFF"
+        app:cardBackgroundColor="@color/sq_surface"
         app:cardCornerRadius="16dp"
         app:cardElevation="1dp"
         app:strokeWidth="0dp">
@@ -74,7 +74,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
                     android:text="View and edit account details"
-                    android:textColor="#64748B"
+                    android:textColor="@color/sq_text_secondary"
                     android:textSize="13sp"
                     tools:ignore="HardcodedText" />
 
@@ -96,7 +96,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        app:cardBackgroundColor="#FFFFFF"
+        app:cardBackgroundColor="@color/sq_surface"
         app:cardCornerRadius="16dp"
         app:cardElevation="1dp"
         app:strokeWidth="0dp">
@@ -111,7 +111,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Preferences"
-                android:textColor="#64748B"
+                android:textColor="@color/sq_text_secondary"
                 android:textSize="13sp"
                 android:textStyle="bold"
                 tools:ignore="HardcodedText" />

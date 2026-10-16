@@ -14,9 +14,6 @@ class AdminDash : AppCompatActivity() {
     private lateinit var binding: ActivityAdminDashBinding
     private val db = FirebaseFirestore.getInstance()
 
-    private lateinit var historyAdapter: DashboardHistoryAdapter
-    private val historyList = mutableListOf<EventHistoryModel>()
-
     private lateinit var recentEventsAdapter: RecentEventsAdapter
     private val recentEventsList = mutableListOf<EventHistoryModel>()
 
@@ -58,29 +55,26 @@ class AdminDash : AppCompatActivity() {
     }
 
     private fun setupRecyclerViews() {
-        // "Recent Events" = currently Active events, tap to view/re-open the live QR
-        recentEventsAdapter = RecentEventsAdapter(recentEventsList) { clickedEvent ->
-            openActiveQrDisplay()
-        }
+        // "Recent Events" = Active events. Tap = buka QR, ikon pensel = edit
+        recentEventsAdapter = RecentEventsAdapter(
+            recentEventsList,
+            onItemClick = { openActiveQrDisplay() },
+            onEditClick = { event ->
+                startActivity(
+                    Intent(this, EditEventActivity::class.java)
+                        .putExtra("EVENT_ID", event.eventId)
+                )
+            }
+        )
         binding.rvRecentEvents.apply {
             layoutManager = LinearLayoutManager(this@AdminDash)
             adapter = recentEventsAdapter
         }
-
-        // "Attendance History" = Ended events, tap to view that event's report
-        historyAdapter = DashboardHistoryAdapter(historyList) { clickedEvent ->
-            val intent = Intent(this, ReportsActivity::class.java).apply {
-                putExtra("EVENT_ID", clickedEvent.eventId)
-            }
-            startActivity(intent)
-        }
-        binding.rvAttendanceHistory.apply {
-            layoutManager = LinearLayoutManager(this@AdminDash)
-            adapter = historyAdapter
-        }
     }
 
     private fun listenForRealtimeUpdates() {
+        val currentUid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: return
+
         db.collection("events")
             .orderBy("timestamp", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
@@ -90,37 +84,40 @@ class AdminDash : AppCompatActivity() {
                 }
 
                 recentEventsList.clear()
-                historyList.clear()
 
                 snapshot?.documents?.forEach { doc ->
-                    val status = doc.getString("status") ?: "Ended"
-                    val model = EventHistoryModel(
-                        eventId = doc.id,
-                        eventName = doc.getString("eventName") ?: "Unnamed Event",
-                        date = doc.getString("date") ?: "N/A",
-                        attendedCount = doc.getLong("attendedCount")?.toInt() ?: 0,
-                        maxPeople = doc.getLong("maxPeople")?.toInt() ?: -1,
-                        status = status,
-                        timestamp = doc.getLong("timestamp") ?: 0L
-                    )
+                    val createdBy = doc.getString("createdBy") ?: ""
+                    if (createdBy != currentUid) return@forEach
 
-                    if (status.equals("Active", ignoreCase = true)) {
-                        recentEventsList.add(model)
-                    } else {
-                        historyList.add(model)
-                    }
+                    // Event Ended tak dipaparkan di sini, rujuk tab Reports
+                    val status = doc.getString("status") ?: "Ended"
+                    if (!status.equals("Active", ignoreCase = true)) return@forEach
+
+                    recentEventsList.add(
+                        EventHistoryModel(
+                            eventId = doc.id,
+                            shortId = doc.getString("shortId") ?: "",
+                            eventName = doc.getString("eventName") ?: "Unnamed Event",
+                            date = doc.getString("date") ?: "N/A",
+                            attendedCount = doc.getLong("attendedCount")?.toInt() ?: 0,
+                            maxPeople = doc.getLong("maxPeople")?.toInt() ?: -1,
+                            status = status,
+                            timestamp = doc.getLong("timestamp") ?: 0L
+                        )
+                    )
                 }
 
                 recentEventsAdapter.notifyDataSetChanged()
-                historyAdapter.notifyDataSetChanged()
             }
     }
 
     private fun openActiveQrDisplay() {
         Toast.makeText(this, "Checking active events...", Toast.LENGTH_SHORT).show()
+        val currentUid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: return
 
         db.collection("events")
             .whereEqualTo("status", "Active")
+            .whereEqualTo("createdBy", currentUid)
             .limit(1)
             .get()
             .addOnSuccessListener { snapshot ->

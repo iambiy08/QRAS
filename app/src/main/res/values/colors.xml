@@ -2,4 +2,15 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="smartqra_blue">#2F6FE4</color>
+    <color name="smartqra_blue_dark">#1D5BC9</color>
+    <color name="smartqra_blue_light">#5B9BF0</color>
+    <color name="smartqra_blue_container">#DCE8FD</color>
+    <color name="sq_background">#F8F9FC</color>
+    <color name="sq_surface">#FFFFFF</color>
+    <color name="sq_text_primary">#0F172A</color>
+    <color name="sq_text_secondary">#64748B</color>
+    <color name="sq_text_muted">#94A3B8</color>
+    <color name="sq_border">#CBD5E1</color>
+    <color name="sq_badge_bg">#EFF6FF</color>
 </resources>

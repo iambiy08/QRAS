@@ -41,11 +41,11 @@ class SettingsActivity : AppCompatActivity() {
 
         // 4. Logout / Switch Role Button -> Navigates to LoginAndSign
         binding.btnLogout.setOnClickListener {
-            auth.signOut()
-            val intent = Intent(this, LoginAndSign::class.java)
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            FirebaseAuth.getInstance().signOut()
+            val intent = Intent(this, LoginAndSign::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
             startActivity(intent)
-            finish()
         }
     }
 }

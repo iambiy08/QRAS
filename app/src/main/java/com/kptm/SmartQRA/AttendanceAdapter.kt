@@ -23,7 +23,7 @@ class AttendanceAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
-        holder.tvStudentName.text = item.studentName
+        holder.tvStudentName.text = "${item.userName}  •  ${item.userId}"
         holder.tvEventName.text = item.eventName
         holder.tvStatus.text = item.status
         holder.tvTime.text = item.time
@@ -34,8 +34,10 @@ class AttendanceAdapter(
 
 data class AttendanceRecord(
     val eventId: String = "",
+    val eventShortId: String = "",
     val eventName: String = "",
-    val studentName: String = "",
+    val userName: String = "",
+    val userId: String = "",
     val time: String = "",
     val status: String = ""
 )

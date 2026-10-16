@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="com.kptm.SmartQRA">
-    <!-- Permissions required for QR scanner -->
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Kamera untuk scanner QR -->
     <uses-permission android:name="android.permission.CAMERA" />
 
     <uses-feature
@@ -18,31 +18,43 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.QRAS">
-        <activity
-            android:name=".ReportsActivity"
+
+        <!-- FileProvider untuk fungsi Export PDF & Excel/CSV -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
             android:exported="false"
-            android:label="Attendance Reports" />
-        <activity
-            android:name=".ProfileActivity"
-            android:exported="false" />
-        <activity
-            android:name=".Signup"
-            android:exported="false" />
-        <activity
-            android:name=".Login"
-            android:exported="false" />
-        <activity
-            android:name=".SettingsActivity"
-            android:exported="false" /> <!-- Entry Point / Role Selection Screen -->
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <!-- Entry Point / Role Selection Screen -->
         <activity
             android:name=".LoginAndSign"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity> <!-- Admin Flow Activities -->
+        </activity>
+
+        <!-- Auth -->
+        <activity
+            android:name=".Login"
+            android:exported="false" />
+        <activity
+            android:name=".Signup"
+            android:exported="false" />
+        <activity
+            android:name=".TotpSetupActivity"
+            android:exported="false" />
+        <activity
+            android:name=".TotpVerifyActivity"
+            android:exported="false" />
+
+        <!-- Admin Flow -->
         <activity
             android:name=".AdminDash"
             android:exported="false" />
@@ -51,7 +63,13 @@
             android:exported="false" />
         <activity
             android:name=".QRDisplay"
-            android:exported="false" /> <!-- User Flow Activities -->
+            android:exported="false" />
+        <activity
+            android:name=".ReportsActivity"
+            android:exported="false"
+            android:label="Reports" />
+
+        <!-- User Flow -->
         <activity
             android:name=".UserDash"
             android:exported="false" />
@@ -59,8 +77,22 @@
             android:name=".ScanQrActivity"
             android:exported="false"
             android:screenOrientation="portrait"
-            android:stateNotNeeded="true"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+            android:stateNotNeeded="true" />
+        <activity
+            android:name=".AttendanceHistoryActivity"
+            android:exported="false"
+            android:label="Attendance History" />
+
+        <!-- Dikongsi -->
+        <activity
+            android:name=".ProfileActivity"
+            android:exported="false" />
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false" />
+
+        <activity android:name=".EditEventActivity" android:exported="false" />
+
     </application>
 
 </manifest>

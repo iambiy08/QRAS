@@ -43,25 +43,34 @@ android {
     }
 }
 
-
 dependencies {
-    // Force core-ktx to version 1.15.0 compatible with compileSdk 36
+    // Force core-ktx to version compatible with compileSdk 36
     implementation("androidx.core:core-ktx:1.15.0")
 
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+    implementation(libs.play.services.auth)
 
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
-    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore-ktx")
-    implementation("com.google.android.material:material:1.11.0")
-    implementation("com.google.firebase:firebase-database-ktx:20.3.1")
+    implementation("com.google.firebase:firebase-database-ktx")
+
+    // Google Sign-In (Credential Manager)
+    implementation("androidx.credentials:credentials:1.5.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.5.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
+
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
 
     // ZXing Barcode Scanner Library
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+    implementation(libs.androidx.navigation.fragment.ktx)
+    implementation(libs.androidx.navigation.ui.ktx)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

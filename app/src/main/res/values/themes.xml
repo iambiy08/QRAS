@@ -1,8 +1,21 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+<resources>
+
     <style name="Base.Theme.QRAS" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="colorPrimary">@color/smartqra_blue</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimaryContainer">@color/smartqra_blue_container</item>
+        <item name="colorOnPrimaryContainer">@color/smartqra_blue_dark</item>
+        <item name="colorSecondary">@color/smartqra_blue_light</item>
+
+        <item name="android:colorBackground">@color/sq_background</item>
+        <item name="colorSurface">@color/sq_surface</item>
+        <item name="colorOnSurface">@color/sq_text_primary</item>
+        <item name="colorOnBackground">@color/sq_text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/sq_text_secondary</item>
+
+        <item name="android:textColorPrimary">@color/sq_text_primary</item>
+        <item name="android:textColorSecondary">@color/sq_text_secondary</item>
+        <item name="android:textColorHint">@color/sq_text_secondary</item>
     </style>
 
     <style name="Theme.QRAS" parent="Base.Theme.QRAS" />

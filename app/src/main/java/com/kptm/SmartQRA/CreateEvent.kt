@@ -2,9 +2,12 @@ package com.kptm.SmartQRA
 
 import android.app.DatePickerDialog
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.kptm.SmartQRA.databinding.ActivityCreateEventBinding
 import java.util.Calendar
@@ -13,6 +16,13 @@ class CreateEvent : AppCompatActivity() {
 
     private lateinit var binding: ActivityCreateEventBinding
     private val db = FirebaseFirestore.getInstance()
+    private val invitedEmailsList = mutableListOf<String>()
+
+    private val pickFileLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { parseCsvFile(it) }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -22,26 +32,64 @@ class CreateEvent : AppCompatActivity() {
         binding.etDate.setOnClickListener { showDatePicker() }
         binding.tilDate.setEndIconOnClickListener { showDatePicker() }
 
+        binding.btnUploadCsv.setOnClickListener {
+            pickFileLauncher.launch("*/*")
+        }
+
         binding.btnGenerateQr.setOnClickListener {
             createAndLaunchEvent()
         }
     }
 
+    /**
+     * Reads a CSV/TXT file and keeps ONLY:
+     *  - valid emails (contain '@')
+     *  - student/admin IDs (usr-xxxx / adm-xxxx)
+     * Header rows (name,email,userid...) and plain names produce no valid token, so they are skipped.
+     * Quotes, BOM and invisible characters are stripped, everything is lowercased and de-duplicated.
+     */
+    private fun parseCsvFile(uri: Uri) {
+        try {
+            val found = LinkedHashSet<String>()
+
+            contentResolver.openInputStream(uri)?.use { inputStream ->
+                inputStream.bufferedReader(Charsets.UTF_8).useLines { lines ->
+                    lines.forEach { line ->
+                        if (line.isBlank()) return@forEach
+                        found.addAll(IdentityUtils.extractIdentifiers(line))
+                    }
+                }
+            }
+
+            invitedEmailsList.clear()
+            invitedEmailsList.addAll(found)
+
+            binding.tvSelectedFile.text = "Loaded ${invitedEmailsList.size} valid student ID/email(s)"
+            if (invitedEmailsList.isEmpty()) {
+                Toast.makeText(
+                    this,
+                    "No valid emails or student IDs (usr-/adm-) found in this file",
+                    Toast.LENGTH_LONG
+                ).show()
+            } else {
+                Toast.makeText(this, "Loaded ${invitedEmailsList.size} valid records", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            Toast.makeText(this, "Failed to read file: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun showDatePicker() {
         val calendar = Calendar.getInstance()
-        val year = calendar.get(Calendar.YEAR)
-        val month = calendar.get(Calendar.MONTH)
-        val day = calendar.get(Calendar.DAY_OF_MONTH)
-
         val datePickerDialog = DatePickerDialog(
             this,
             { _, selectedYear, selectedMonth, selectedDay ->
                 val dateString = String.format("%02d/%02d/%d", selectedDay, selectedMonth + 1, selectedYear)
                 binding.etDate.setText(dateString)
             },
-            year,
-            month,
-            day
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
         )
         datePickerDialog.show()
     }
@@ -51,7 +99,6 @@ class CreateEvent : AppCompatActivity() {
         val location = binding.etLocation.text?.toString()?.trim() ?: ""
         val manager = binding.etManagedBy.text?.toString()?.trim() ?: ""
         val date = binding.etDate.text?.toString()?.trim() ?: ""
-
         val durationMin = binding.etDuration.text?.toString()?.toLongOrNull() ?: 10L
         val maxPeople = binding.etMaxPeople.text?.toString()?.toIntOrNull() ?: -1
 
@@ -60,7 +107,6 @@ class CreateEvent : AppCompatActivity() {
             return
         }
 
-        // Create a new document with an auto-generated ID (Firestore equivalent of .push())
         val eventRef = db.collection("events").document()
         val eventId = eventRef.id
         val targetEndTime = System.currentTimeMillis() + (durationMin * 60 * 1000L)
@@ -68,6 +114,7 @@ class CreateEvent : AppCompatActivity() {
         val eventMap = hashMapOf(
             "eventId" to eventId,
             "shortId" to generateShortId(),
+            "createdBy" to (FirebaseAuth.getInstance().currentUser?.uid ?: ""),
             "eventName" to eventName,
             "location" to location,
             "managedBy" to manager,
@@ -76,7 +123,8 @@ class CreateEvent : AppCompatActivity() {
             "maxPeople" to maxPeople,
             "targetEndTime" to targetEndTime,
             "status" to "Active",
-            "timestamp" to System.currentTimeMillis()
+            "timestamp" to System.currentTimeMillis(),
+            "invitedEmails" to invitedEmailsList.toList()
         )
 
         eventRef.set(eventMap)

@@ -2,56 +2,65 @@ package com.kptm.SmartQRA
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.kptm.SmartQRA.databinding.ActivityUserDashBinding
-import com.kptm.SmartQRA.R
 
 class UserDash : AppCompatActivity() {
 
     private lateinit var binding: ActivityUserDashBinding
+    private val db = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-
         binding = ActivityUserDashBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        ViewCompat.setOnApplyWindowInsetsListener(binding.main) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
+        setupListeners()
+        loadUserProfile()
+    }
 
-        // Dashboard Card/Button Click Listeners
+    private fun setupListeners() {
         binding.btnScanQr.setOnClickListener {
-            val intent = Intent(this, ScanQrActivity::class.java)
-            startActivity(intent)
+            startActivity(Intent(this, ScanQrActivity::class.java))
         }
 
         binding.btnSettings.setOnClickListener {
-            val intent = Intent(this, SettingsActivity::class.java)
-            startActivity(intent)
+            startActivity(Intent(this, SettingsActivity::class.java))
         }
-
-        // Bottom Navigation (Events & Scan QR only)
-        binding.bottomNavigation.selectedItemId = R.id.nav_events
 
         binding.bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.nav_events -> true // Already on User Dashboard / Events screen
-
+                R.id.nav_events -> true
                 R.id.nav_scan_qr -> {
-                    val intent = Intent(this, ScanQrActivity::class.java)
-                    startActivity(intent)
+                    startActivity(Intent(this, ScanQrActivity::class.java))
                     true
                 }
-
+                R.id.nav_history -> {
+                    startActivity(Intent(this, AttendanceHistoryActivity::class.java))
+                    true
+                }
                 else -> false
             }
         }
+    }
+
+    private fun loadUserProfile() {
+        val uid = auth.currentUser?.uid ?: return
+
+        db.collection("users").document(uid).get()
+            .addOnSuccessListener { document ->
+                val userId = document.getString("userId") ?: "N/A"
+                val name = document.getString("name") ?: auth.currentUser?.displayName ?: "User"
+
+                binding.tvUserNameHeader.text = name
+                binding.tvUserIdDisplay.text = "ID: $userId"
+            }
+            .addOnFailureListener {
+                binding.tvUserNameHeader.text = "User"
+                binding.tvUserIdDisplay.text = "ID: N/A"
+            }
     }
 }

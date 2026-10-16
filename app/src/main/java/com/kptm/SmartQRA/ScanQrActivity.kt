@@ -1,164 +1,179 @@
 package com.kptm.SmartQRA
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
-import android.widget.TextView
+import android.view.View
+import android.view.WindowManager
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-import com.journeyapps.barcodescanner.ScanContract
-import com.journeyapps.barcodescanner.ScanIntentResult
-import com.journeyapps.barcodescanner.ScanOptions
+import com.google.zxing.ResultPoint
+import com.journeyapps.barcodescanner.BarcodeCallback
+import com.journeyapps.barcodescanner.BarcodeResult
+import com.kptm.SmartQRA.databinding.ActivityScanQrBinding
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.abs
 
 class ScanQrActivity : AppCompatActivity() {
 
+    companion object {
+        private const val MAX_QR_AGE_MS = 10_000L
+        private const val LATE_AFTER_MS = 5 * 60_000L // 5 minit
+    }
+
+    private lateinit var binding: ActivityScanQrBinding
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
+    private var torchOn = false
+    private var handled = false
 
-    private val barcodeLauncher = registerForActivityResult(ScanContract()) { result: ScanIntentResult ->
-        if (result.contents == null) {
-            Toast.makeText(this, "Scan cancelled", Toast.LENGTH_SHORT).show()
-            finish()
-        } else {
-            handleScannedPayload(result.contents)
+    private val cameraPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) startScanning()
+            else {
+                Toast.makeText(this, "Camera permission is required to scan", Toast.LENGTH_LONG).show()
+                finish()
+            }
         }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_scan_qr)
+        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
+        binding = ActivityScanQrBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        val options = ScanOptions().apply {
-            setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-            setPrompt("Align the admin QR code within the frame")
-            setCameraId(0)
-            setBeepEnabled(true)
-            setBarcodeImageEnabled(false)
-            setOrientationLocked(false)
+        binding.scanner.setStatusText("")
+        binding.btnBack.setOnClickListener { finish() }
+
+        if (packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH)) {
+            binding.btnTorch.setOnClickListener {
+                torchOn = !torchOn
+                if (torchOn) binding.scanner.setTorchOn() else binding.scanner.setTorchOff()
+            }
+        } else {
+            binding.btnTorch.visibility = View.GONE
         }
 
-        barcodeLauncher.launch(options)
+        if (hasCameraPermission()) startScanning()
+        else cameraPermission.launch(Manifest.permission.CAMERA)
     }
 
-    /**
-     * QR payload format from QRDisplay.kt: "SMARTQRA:$eventId:$timestamp:$remainingMillis"
-     */
+    private fun hasCameraPermission() =
+        ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+
+    private fun startScanning() {
+        binding.scanner.decodeSingle(object : BarcodeCallback {
+            override fun barcodeResult(result: BarcodeResult) {
+                val text = result.text ?: return
+                if (handled) return
+                handled = true
+                binding.processingOverlay.visibility = View.VISIBLE
+                handleScannedPayload(text)
+            }
+            override fun possibleResultPoints(resultPoints: MutableList<ResultPoint>) {}
+        })
+        binding.scanner.resume()
+    }
+
     private fun handleScannedPayload(rawPayload: String) {
         val parts = rawPayload.split(":")
-
-        if (parts.size < 2 || parts[0] != "SMARTQRA") {
-            Toast.makeText(this, "Invalid QR Code", Toast.LENGTH_SHORT).show()
-            finish()
+        if (parts.size < 3 || parts[0] != "SMARTQRA") {
+            toastAndFinish("Invalid QR Code")
             return
         }
-
-        val eventId = parts[1]
-        recordAttendance(eventId)
+        val qrTime = parts[2].toLongOrNull() ?: run {
+            toastAndFinish("Invalid QR Code")
+            return
+        }
+        if (abs(System.currentTimeMillis() - qrTime) > MAX_QR_AGE_MS) {
+            toastAndFinish("QR code expired. Scan the latest code.")
+            return
+        }
+        recordAttendance(parts[1])
     }
 
     private fun recordAttendance(eventId: String) {
-        val currentUser = auth.currentUser
-        if (currentUser == null) {
-            Toast.makeText(this, "You must be logged in to check in", Toast.LENGTH_SHORT).show()
-            finish()
+        val currentUser = auth.currentUser ?: run {
+            toastAndFinish("You must be logged in to check in")
             return
         }
         val uid = currentUser.uid
-
         val eventRef = db.collection("events").document(eventId)
 
-        eventRef.get()
-            .addOnSuccessListener { eventDoc ->
-                if (!eventDoc.exists()) {
-                    Toast.makeText(this, "Invalid QR Code / Event not found", Toast.LENGTH_SHORT).show()
-                    finish()
-                    return@addOnSuccessListener
-                }
-
-                val status = eventDoc.getString("status") ?: "Ended"
-                if (!status.equals("Active", ignoreCase = true)) {
-                    Toast.makeText(this, "This session has ended.", Toast.LENGTH_LONG).show()
-                    finish()
-                    return@addOnSuccessListener
-                }
-
-                val currentAttended = eventDoc.getLong("attendedCount")?.toInt() ?: 0
-                val maxPeople = eventDoc.getLong("maxPeople")?.toInt() ?: -1
-
-                if (maxPeople != -1 && currentAttended >= maxPeople) {
-                    Toast.makeText(this, "Event is full! Maximum capacity reached.", Toast.LENGTH_LONG).show()
-                    finish()
-                    return@addOnSuccessListener
-                }
-
-                // Check for duplicate scan by this student
-                val attendeeRef = eventRef.collection("attendees").document(uid)
-                attendeeRef.get()
-                    .addOnSuccessListener { attendeeDoc ->
-                        if (attendeeDoc.exists()) {
-                            Toast.makeText(this, "You've already checked in for this session.", Toast.LENGTH_LONG).show()
-                            finish()
-                            return@addOnSuccessListener
-                        }
-
-                        fetchStudentNameAndSave(uid, eventRef, attendeeRef)
-                    }
-                    .addOnFailureListener {
-                        Toast.makeText(this, "Error checking attendance: ${it.message}", Toast.LENGTH_SHORT).show()
-                        finish()
-                    }
+        eventRef.get().addOnSuccessListener { eventDoc ->
+            if (!eventDoc.exists()) {
+                toastAndFinish("Invalid QR Code / Event not found")
+                return@addOnSuccessListener
             }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Error reading event: ${e.message}", Toast.LENGTH_SHORT).show()
-                finish()
+
+            val status = eventDoc.getString("status") ?: "Ended"
+            if (!status.equals("Active", ignoreCase = true)) {
+                toastAndFinish("This session has ended.")
+                return@addOnSuccessListener
             }
+
+            val eventStart = eventDoc.getLong("timestamp") ?: System.currentTimeMillis()
+            val attendeeStatus = if (System.currentTimeMillis() - eventStart > LATE_AFTER_MS) "Late" else "Present"
+
+            val attendeeRef = eventRef.collection("attendees").document(uid)
+            attendeeRef.get().addOnSuccessListener { attendeeDoc ->
+                if (attendeeDoc.exists()) {
+                    toastAndFinish("You've already checked in for this session.")
+                } else {
+                    fetchUserAndSave(uid, eventRef, attendeeRef, attendeeStatus)
+                }
+            }.addOnFailureListener {
+                toastAndFinish("Error checking attendance: ${it.message}")
+            }
+        }.addOnFailureListener {
+            toastAndFinish("Error reading event: ${it.message}")
+        }
     }
 
-    private fun fetchStudentNameAndSave(
+    private fun fetchUserAndSave(
         uid: String,
-        eventRef: com.google.firebase.firestore.DocumentReference,
-        attendeeRef: com.google.firebase.firestore.DocumentReference
+        eventRef: DocumentReference,
+        attendeeRef: DocumentReference,
+        attendeeStatus: String
     ) {
-        db.collection("users").document(uid).get()
-            .addOnSuccessListener { userDoc ->
-                val studentName = userDoc.getString("name") ?: auth.currentUser?.email ?: "Unknown Student"
-                val now = Date()
-                val timeDisplay = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(now)
+        // Membaca dokumen daripada koleksi users berdasarkan UID
+        db.collection("users").document(uid).get().addOnSuccessListener { userDoc ->
+            val userName = userDoc.getString("name") ?: "Unknown User"
+            val userEmail = userDoc.getString("email")?.trim()?.lowercase() ?: (auth.currentUser?.email?.lowercase() ?: "N/A")
+            val studentId = userDoc.getString("userId")?.trim() ?: "N/A"
+            val timeDisplay = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date())
 
-                val attendeeMap = hashMapOf(
-                    "studentName" to studentName,
-                    "studentUid" to uid,
-                    "timeDisplay" to timeDisplay,
-                    "scanTime" to now.time,
-                    "status" to "Present"
-                )
+            val record = hashMapOf(
+                "userId" to studentId,
+                "userUid" to uid,          // needed by Attendance History (collectionGroup query + rules)
+                "userName" to userName,
+                "email" to userEmail,
+                "status" to attendeeStatus,
+                "scanTime" to System.currentTimeMillis(),
+                "timeDisplay" to timeDisplay
+            )
 
-                attendeeRef.set(attendeeMap)
-                    .addOnSuccessListener {
-                        // Increment the counter atomically (safe even with simultaneous scans)
-                        eventRef.update("attendedCount", FieldValue.increment(1))
-                            .addOnSuccessListener {
-                                Toast.makeText(this, "Attendance recorded successfully!", Toast.LENGTH_SHORT).show()
-                                finish()
-                            }
-                            .addOnFailureListener {
-                                // Attendee record saved even if counter update fails
-                                Toast.makeText(this, "Attendance saved!", Toast.LENGTH_SHORT).show()
-                                finish()
-                            }
-                    }
-                    .addOnFailureListener { e ->
-                        Toast.makeText(this, "Error saving attendance: ${e.message}", Toast.LENGTH_SHORT).show()
-                        finish()
-                    }
+            attendeeRef.set(record).addOnSuccessListener {
+                eventRef.update("attendedCount", FieldValue.increment(1))
+                toastAndFinish("Attendance Recorded: $attendeeStatus")
+            }.addOnFailureListener {
+                toastAndFinish("Failed to record attendance: ${it.message}")
             }
-            .addOnFailureListener {
-                Toast.makeText(this, "Error fetching profile: ${it.message}", Toast.LENGTH_SHORT).show()
-                finish()
-            }
+        }.addOnFailureListener {
+            toastAndFinish("Failed to fetch user profile: ${it.message}")
+        }
+    }
+
+    private fun toastAndFinish(msg: String) {
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+        finish()
     }
 }

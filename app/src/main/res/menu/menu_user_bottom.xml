@@ -11,4 +11,9 @@
         android:icon="@android:drawable/ic_menu_camera"
         android:title="Scan QR" />
 
+    <item
+        android:id="@+id/nav_history"
+        android:icon="@android:drawable/ic_menu_recent_history"
+        android:title="History" />
+
 </menu>

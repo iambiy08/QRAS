@@ -5,7 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8F9FC"
+    android:background="@color/sq_background"
     android:orientation="vertical"
     android:padding="20dp">
 
@@ -33,8 +33,8 @@
             app:icon="@android:drawable/ic_menu_revert"
             app:iconGravity="textStart"
             app:iconSize="20dp"
-            app:iconTint="#0F172A"
-            app:strokeColor="#CBD5E1"
+            app:iconTint="@color/sq_text_primary"
+            app:strokeColor="@color/sq_border"
             app:strokeWidth="1dp" />
 
         <TextView
@@ -84,7 +84,7 @@
             android:layout_width="260dp"
             android:layout_height="260dp"
             android:layout_marginTop="20dp"
-            app:cardBackgroundColor="#FFFFFF"
+            app:cardBackgroundColor="@color/sq_surface"
             app:cardCornerRadius="16dp"
             app:cardElevation="2dp"
             app:strokeWidth="0dp">
