@@ -5,7 +5,9 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.kptm.SmartQRA.databinding.ActivityAdminDashBinding
 
@@ -16,6 +18,7 @@ class AdminDash : AppCompatActivity() {
 
     private lateinit var recentEventsAdapter: RecentEventsAdapter
     private val recentEventsList = mutableListOf<EventHistoryModel>()
+    private var eventsListener: ListenerRegistration? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,9 +76,9 @@ class AdminDash : AppCompatActivity() {
     }
 
     private fun listenForRealtimeUpdates() {
-        val currentUid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val currentUid = FirebaseAuth.getInstance().currentUser?.uid ?: return
 
-        db.collection("events")
+        eventsListener = db.collection("events")
             .orderBy("timestamp", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
@@ -113,7 +116,7 @@ class AdminDash : AppCompatActivity() {
 
     private fun openActiveQrDisplay() {
         Toast.makeText(this, "Checking active events...", Toast.LENGTH_SHORT).show()
-        val currentUid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val currentUid = FirebaseAuth.getInstance().currentUser?.uid ?: return
 
         db.collection("events")
             .whereEqualTo("status", "Active")
@@ -153,5 +156,11 @@ class AdminDash : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         binding.bottomNavigation.selectedItemId = R.id.nav_dashboard
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Hentikan pendengar bila skrin ditutup, supaya tak kena PERMISSION_DENIED lepas logout
+        eventsListener?.remove()
     }
 }

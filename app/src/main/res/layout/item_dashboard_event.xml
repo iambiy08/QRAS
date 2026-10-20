@@ -30,7 +30,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Software Engineering Workshop"
-                android:textColor="#0F172A"
+                android:textColor="@color/sq_text_primary"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 

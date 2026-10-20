@@ -41,7 +41,7 @@
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
             android:text="My Profile"
-            android:textColor="#0F172A"
+            android:textColor="@color/sq_text_primary"
             android:textSize="20sp"
             android:textStyle="bold"
             tools:ignore="HardcodedText" />
@@ -138,7 +138,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:inputType="textPersonName"
-                            android:textColor="#0F172A" />
+                            android:textColor="@color/sq_text_primary" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <!-- Account Role Field (Disabled/Read-Only) -->

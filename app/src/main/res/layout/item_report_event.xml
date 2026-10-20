@@ -27,7 +27,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Event name"
-                android:textColor="#0F172A"
+                android:textColor="@color/sq_text_primary"
                 android:textSize="15sp"
                 android:textStyle="bold" />
 

@@ -93,7 +93,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Align the lecturer's QR code"
-                    android:textColor="#0F172A"
+                    android:textColor="@color/sq_text_primary"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     tools:ignore="HardcodedText" />
